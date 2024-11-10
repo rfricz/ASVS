@@ -86,13 +86,20 @@ class ASVS:
         nist_url = "https://pages.nist.gov/800-63-3/sp800-63b.html"
         nist_html = urllib.request.urlopen(nist_url).read().decode()
         nist_headings = ["".join(h) for h in re.findall(r'<h[34]([^>]*)>(.+)</h[34]>', nist_html)]
-        nist_map = {}
+        nist_anchor_map = {}
         for h in nist_headings:
             if secnum := re.findall(r'[1-9A]+\.[0-9\.]+', h):
                 if a_id := re.findall(r'id="(.+)"', h):
-                    nist_map[secnum[0]] = a_id[0]
+                    nist_anchor_map[secnum[0]] = a_id[0]
                 if a_name := re.findall(r'name="(.+)"', h):
-                    nist_map[secnum[0]] = a_name[0]
+                    nist_anchor_map[secnum[0]] = a_name[0]
+
+        regex = re.compile(r"\*\*([\d\.]+)\*\*\s\|\s?(.*?)\s?\|")
+        nist_section_map = {}
+        for line in open(os.path.join("mappings", "nist.md"), encoding="utf8"):
+            m = re.search(regex, line)
+            if m and m.group(2).strip():
+                nist_section_map[m.group(1)] = [s.strip() for s in re.split(r"[,/]", m.group(2))]
 
         self.asvs['Requirements'] = chapters = []
         rv_doc = self.rv['documents'][0]
@@ -150,7 +157,7 @@ class ASVS:
                                 obj['attachments'] = []
                             obj['attachments'].append(att_id)
                             b64_data = base64.b64encode(stream.read())
-                            self.rv['attachments'][att_id] = {'data': f"data:image/png;base64,{b64_data.decode()}"}
+                            self.rv['attachments'][att_id] = {'data': "data:image/png;base64," + b64_data.decode()}
 
                         e.children = [c for c in e.children if c.get_type() != "Image"]
                     html = gfm.render(e)
@@ -234,7 +241,7 @@ class ASVS:
                 rv_section_help_lines = []
                 rv_help_dest = None
                 def rv_push_help_line(line):
-                    if rv_help_dest and line and not line.startswith("| # |") and line.count(":---") < 6:
+                    if rv_help_dest and line and not line.startswith("| # |") and line.count(":---") < 5:
                         arr = rv_chapter_help_lines if rv_help_dest == 'chapter' else rv_section_help_lines
                         arr.append(line)
                 def rv_render_help():
@@ -253,7 +260,7 @@ class ASVS:
 
                 for line in open(os.path.join(self.language, file), encoding="utf8"):
                     found_regex = False
-                    regex = re.compile(r"^#\s(" + prefix_char1 + "([0-9]{1,2})" + prefix_char1_b + r")\s([\w\s][^\n]*)")
+                    regex = re.compile(r"^#\s(%s([0-9]{1,2})%s)\s([\w\s][^\n]*)" % (prefix_char1, prefix_char1_b))
                     #if line.startswith('# '):
                     #    print(line)
                     m = re.search(regex, line)
@@ -264,7 +271,7 @@ class ASVS:
                         chapter['Name'] = m.group(3)
                         rv_chapter['heading'] = chapter['Name']
 
-                    regex = re.compile("## (" + prefix_char2 + r"[0-9]{1,2}.([0-9]{1,3})) ([\w\s][^\n]*)")
+                    regex = re.compile(r"## (%s[0-9]{1,2}.([0-9]{1,3})) ([\w\s][^\n]*)" % prefix_char2)
                     m = re.search(regex, line)
                     if m:
                         rv_render_help()
@@ -291,8 +298,7 @@ class ASVS:
                         chapter['Items'].append(section)
                         rv_chapter['children'].append(rv_section)
 
-                    regex = re.compile(r"\*\*([\d\.]+)\*\*\s\|\s{0,1}(.*?)\s{0,1}\|(.*?)\|" +
-                                    r"(.*?)\|(.*?)\|([0-9,\s]*)\|([A-Z0-9/\s,.]*)\|{0,1}")
+                    regex = re.compile(r"\*\*([\d\.]+)\*\*\s\|\s?(.*?)\s?\|(.*?)\|(.*?)\|(.*?)\|([0-9,\s]*)\|?([A-Z0-9/\s,.]*)\|?")
                     m = re.search(regex, line)
                     if m:
                         found_regex = True
@@ -349,9 +355,11 @@ class ASVS:
                         rv_cwe = ", ".join([f'<a href="https://cwe.mitre.org/data/definitions/{n}.html">{n}</a>' for n in req['CWE']])
                         if rv_cwe:
                             rv_req['cwe'] = "<p>" + rv_cwe + "</p>"
-                        rv_nist = " / ".join([f'<a href="{nist_url}#{nist_map.get(s, "")}">{s}</a>' for s in req['NIST']])
-                        if rv_nist:
-                            rv_req['nist'] = "<p>" + rv_nist + "</p>"
+                        nist_sec = nist_section_map.get(rv_req['asvsId'])
+                        if nist_sec:
+                            rv_nist = " / ".join([f'<a href="{nist_url}#{nist_anchor_map.get(s, "")}">{s}</a>' for s in nist_sec])
+                            if rv_nist:
+                                rv_req['nist'] = "<p>" + rv_nist + "</p>"
                         if req['Description'].startswith("[DELETED"):
                             rv_req['deleted'] = True
                         if level1['Requirement'] == "Optional":
