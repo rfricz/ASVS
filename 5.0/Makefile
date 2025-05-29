@@ -27,6 +27,7 @@ ODT_FILES := $(foreach lang, $(LANGDIRS), $(DISTDIR)/$(lang)/$(TARGETNAME)$(lang
 JSON_FILES := $(foreach lang, $(LANGDIRS), $(DISTDIR)/$(lang)/$(TARGETNAME)$(lang).json)
 JSON_CDX_FILES := $(foreach lang, $(LANGDIRS), $(DISTDIR)/$(lang)/$(TARGETNAME)$(lang).cdx.json)
 JSON_FLAT_FILES := $(foreach lang, $(LANGDIRS), $(DISTDIR)/$(lang)/$(TARGETNAME)$(lang).flat.json)
+JSON_REQW_FILES := $(foreach lang, $(LANGDIRS), $(DISTDIR)/$(lang)/$(TARGETNAME)$(lang).reqw)
 CSV_FILES := $(foreach lang, $(LANGDIRS), $(DISTDIR)/$(lang)/$(TARGETNAME)$(lang).csv)
 XML_FILES := $(foreach lang, $(LANGDIRS), $(DISTDIR)/$(lang)/$(TARGETNAME)$(lang).xml)
 
@@ -42,16 +43,16 @@ EXPORT_TOOL=$(TOOLSDIR)/export.py
 # Change LaTeX engine
 PANDOC_MD_FLAGS=-f gfm -s -t markdown
 
-PANDOC_PDF_FLAGS=-f markdown -s -t latex --pdf-engine=xelatex 
+PANDOC_PDF_FLAGS=-f markdown -s -t latex --pdf-engine=xelatex
 
-PANDOC_TEX_FLAGS=-f markdown -s -t latex 
+PANDOC_TEX_FLAGS=-f markdown -s -t latex
 
 PANDOC_DOCX_FLAGS= -s \
 				  -t docx \
 				  -f markdown \
 				  --toc \
 				  --columns 10000 \
-				  --reference-doc=./templates/reference.docx 
+				  --reference-doc=./templates/reference.docx
 
 PANDOC_ODT_FLAGS= -s \
 				  -t odt \
@@ -60,9 +61,9 @@ PANDOC_ODT_FLAGS= -s \
 				  --columns 10000 \
 				  --reference-doc=./templates/reference.odt
 
-.PHONY: md pdf docx json json_flat cdx_json csv xml odt tex clean rm-build rm-dist json_legacy json_flat_legacy csv_legacy xml_legacy
+.PHONY: md pdf docx json json_flat cdx_json reqw_json csv xml odt tex clean rm-build rm-dist json_legacy json_flat_legacy csv_legacy xml_legacy
 
-all: $(TARGETS)	pdf docx json json_flat cdx_json csv xml json_legacy json_flat_legacy csv_legacy xml_legacy rm-build
+all: $(TARGETS)	pdf docx json json_flat cdx_json reqw_json csv xml json_legacy json_flat_legacy csv_legacy xml_legacy rm-build
 
 $(BUILDDIR):
 	mkdir -p $@
@@ -81,7 +82,7 @@ $(DIST_FOLDERS): $(DISTDIR)
 $(BUILD_FOLDERS): $(BUILDDIR)
 	echo $@
 	mkdir -p $@
-	 
+
 $(MD_FILES): $(BUILD_FILES) $(DIST_FOLDERS) $(BUILD_FOLDERS)
 	mkdir -p $(@D)
 	pandoc $(PANDOC_MD_FLAGS) -o $@ $(patsubst $(DISTDIR)/%, $(BUILDDIR)/%, $@)
@@ -116,6 +117,10 @@ json_flat: $(JSON_FLAT_FILES)
 $(JSON_CDX_FILES): $(SOURCE_FOLDERS) $(DIST_FOLDERS)
 	python3 $(EXPORT_TOOL) --format cdx_json --language "$(subst dist,,$(@D))" > $@
 cdx_json: $(JSON_CDX_FILES)
+
+$(JSON_REQW_FILES): $(SOURCE_FOLDERS) $(DIST_FOLDERS)
+	python3 $(EXPORT_TOOL) --format reqw_json --language "$(subst dist,,$(@D))" > $@
+reqw_json: $(JSON_REQW_FILES)
 
 $(CSV_FILES): $(SOURCE_FOLDERS) $(DIST_FOLDERS)
 	python3 $(EXPORT_TOOL) --format csv --language "$(subst dist,,$(@D))" > $@
