@@ -64,7 +64,7 @@ PANDOC_ODT_FLAGS= -s \
 
 .PHONY: md pdf docx json json_flat cdx_json reqw_json csv xml odt tex clean rm-build rm-dist json_legacy json_flat_legacy csv_legacy xml_legacy
 
-all: $(TARGETS)	pdf docx json json_flat cdx_json reqw_json csv xml json_legacy json_flat_legacy csv_legacy xml_legacy rm-build
+all: $(TARGETS)	reqw_json rm-build
 
 $(BUILDDIR):
 	mkdir -p $@

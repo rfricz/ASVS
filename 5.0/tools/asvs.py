@@ -126,7 +126,7 @@ class ASVS:
         rv_doc['createdOn'] = rv_doc['lastChangedOn'] = timestamp
 
         rv_chapters = rv_doc['data'] = []
-        if self.language == 'ar':
+        if self.language.endswith('ar'):
             rv_doc['rtl'] = True
 
         self.rv['attachments'] = {}
@@ -215,6 +215,7 @@ class ASVS:
                 section['Ordinal'] = ""
                 section['Name'] = ""
                 section_raw['Name'] = ""
+                section_raw['Reqs'] = []
                 section['Items'] = []
 
                 # never used by rv
@@ -310,6 +311,7 @@ class ASVS:
 
                 before_reqs = True
                 matched_already = False
+                has_cwe = False
 
                 for line in open(os.path.join(self.language, file), encoding="utf8"):
                     matched_already = False
@@ -337,8 +339,8 @@ class ASVS:
                         section['Shortcode'] = m.group(1)
                         section['Ordinal'] = int(m.group(2))
 
-                        if self.language == 'ar':
-                            section['Ordinal'] = int(m.group(1).split('.')[0].replace(prefix_char2, ''))
+                        # if self.language.endswith('ar'):
+                        #     section['Ordinal'] = int(m.group(1).split('.')[0].replace(prefix_char2, ''))
 
                         section['Name'] = m.group(3)
                         section_raw['Section'] = section
@@ -378,8 +380,8 @@ class ASVS:
                         req = {}
                         req_flat2['Item'] = req_flat['req_id'] = req['Shortcode'] = prefix_char2 + m.group(1)
                         req['Ordinal'] = int(m.group(1).rsplit('.',1)[1])
-                        if self.language == 'ar':
-                            req['Ordinal'] = int(m.group(1).split('.')[0])
+                        # if self.language.endswith('ar'):
+                        #     req['Ordinal'] = int(m.group(1).split('.')[0])
 
                         req_flat2['Description'] = req_flat['req_description'] = req['Description'] = m.group(2)
 
@@ -576,7 +578,7 @@ class ASVS:
                 else:
                     return f'<p><{tag}>'
             html = re.sub(r'<(/?)h(\d)>', heading_sub, html)
-        if self.language != "ar":
+        if not self.language.endswith('ar'):
             return html.replace('<table>', '<table style="width: 100%;">').strip()
         def rtl_sub(m):
             tag = m.group(1)
@@ -860,10 +862,10 @@ class ASVS:
     def get_prefix(self):
         prefix_char1 = prefix_char2 = 'V'
         prefix_char1_b = ''
-        if self.language == 'ar':
-            prefix_char1 = 'ت'
-            prefix_char1_b = ':'
-            prefix_char2 = 'ق'
+        # if self.language.endswith('ar'):
+        #     prefix_char1 = 'ت'
+        #     prefix_char1_b = ':'
+        #     prefix_char2 = 'ق'
 
 
 
